@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Earthquakes heatmap</title>
+<script src="https://code.jquery.com/jquery-1.11.2.min.js"></script>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/ol3/3.7.0/ol.css" type="text/css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ol3/3.7.0/ol.js"></script>
+
+</head>
+<body>
+<div class="container-fluid">
+
+<div class="row-fluid">
+  <div class="span12">
+    <div id="map" class="map"></div>
+  </div>
+  <div class="span4">
+    <form>
+      <label>radius size</label>
+      <input id="radius" type="range" min="1" max="50" step="1" value="5"/>
+      <label>blur size</label>
+      <input id="blur" type="range" min="1" max="50" step="1" value="15"/>
+    </form>
+  </div>
+</div>
+
+</div>
+<script>
+var blur = document.getElementById('blur');
+var radius = document.getElementById('radius');
+
+var vector = new ol.layer.Heatmap({
+  source: new ol.source.Vector({
+    url: 'a.kml',
+    format: new ol.format.KML({
+      extractStyles: false
+    })
+  }),
+  blur: parseInt(blur.value, 10),
+  radius: parseInt(radius.value, 10),
+  opacity: 0.3
+});
+
+
+
+var raster = new ol.layer.Tile({
+  source: new ol.source.Stamen({
+    layer: 'toner'
+  })
+});
+
+var map = new ol.Map({
+  layers: [raster, vector],
+  target: 'map',
+  view: new ol.View({
+    center: [11579877.114298277, 3593155.7680098517],
+    zoom: 5
+  })
+});
+
+
+blur.addEventListener('input', function() {
+  vector.setBlur(parseInt(blur.value, 10));
+});
+
+radius.addEventListener('input', function() {
+  vector.setRadius(parseInt(radius.value, 10));
+});
+showCover()
+
+function showCover(){
+  var coverStyles = [
+  /* We are using two different styles for the polygons:
+   *  - The first style is for the polygons themselves.
+   *  - The second style is to draw the vertices of the polygons.
+   *    In a custom `geometry` function the vertices of a polygon are
+   *    returned as `MultiPoint` geometry, which will be used to render
+   *    the style.
+   */
+    new ol.style.Style({
+      stroke: new ol.style.Stroke({
+        color: 'blue',
+        width: 0.1
+      }),
+      fill: new ol.style.Fill({
+        color: 'rgba(0, 0, 255, 0.1)'
+      })
+    })
+  ];
+
+  var geojsonObject = {
+    'type': 'FeatureCollection',
+    'crs': {
+      'type': 'name',
+      'properties': {
+        'name': 'EPSG:3857'
+      }
+    },
+    'features': [
+      {
+        'type': 'Feature',
+        'geometry': {
+          'type': 'Polygon',
+          'coordinates': [[[-20037508.342789244, 238107693.26496765], [20037508.342789244, 238107693.26496765], [20037508.342789244, -44927335.42709704],[-20037508.342789244, -44927335.42709704],[-20037508.342789244, 238107693.26496765]]]
+        }
+      }
+    ]
+  };
+
+  var coverSource = new ol.source.Vector({
+    features: (new ol.format.GeoJSON()).readFeatures(geojsonObject)
+  });
+
+  var layer = new ol.layer.Vector({
+    source: coverSource,
+    style: coverStyles
+  });
+  map.addLayer(layer)
+}
+</script>
+</body>
+</html>
